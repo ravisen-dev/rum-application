@@ -26,11 +26,12 @@ builder.Services.AddDbContext<RumDbContext>(options =>
 // Add CORS support
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowLocalhost4200And4201", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:4200", "http://localhost:4201")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -43,7 +44,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
+app.UseCors("AllowLocalhost4200And4201");
 
 // Auto-run DB migrations on startup to make the application plug-and-play
 using (var scope = app.Services.CreateScope())

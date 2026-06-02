@@ -7,8 +7,8 @@ A simple Angular 21 sample app that integrates with the `rum-api` backend and se
 This app demonstrates:
 
 - registering a monitored application with the RUM backend
-- sending page view telemetry
-- sending custom event telemetry for todo actions
+- sending page view telemetry through the `rum-sdk`
+- sending custom event telemetry for todo actions through the `rum-sdk`
 - using the existing `rum-api` ingestion endpoint
 
 ## Project structure
@@ -37,5 +37,5 @@ Then open the app in your browser at `http://localhost:4201`.
 ## Notes
 
 - The app will automatically create or reuse an application named `RUM SDK Todos` in the backend.
-- Telemetry is sent to `http://localhost:5000/api/telemetry/ingest`.
-- If you need the app to use a different backend URL, update `rum-api.service.ts`.
+- Telemetry is sent through the local `@rum-app/sdk` package to `http://localhost:5000/api/telemetry/ingest`.
+- If you need the app to use a different backend URL, update `rum-api.service.ts` or the `RumSDK` initialization endpoint in `app.component.ts`.

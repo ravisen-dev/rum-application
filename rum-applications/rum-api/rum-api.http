@@ -1,4 +1,4 @@
-@rum_api_HostAddress = http://localhost:5148
+@rum_api_HostAddress = http://localhost:5000
 
 GET {{rum_api_HostAddress}}/weatherforecast/
 Accept: application/json

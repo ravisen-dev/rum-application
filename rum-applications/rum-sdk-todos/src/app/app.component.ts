@@ -1,7 +1,8 @@
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RumApiService } from './rum-api.service';
+import { RumSDK } from '@rum-app/sdk';
 
 interface TodoItem {
   id: string;
@@ -30,7 +31,20 @@ export class AppComponent implements OnInit {
 
   async ngOnInit() {
     await this.initializeApplication();
-    await this.sendPageView();
+  }
+
+  private initializeRumSdk() {
+    if (!this.appId) {
+      return;
+    }
+
+    RumSDK.init({
+      endpoint: 'http://localhost:5000/api/telemetry/ingest',
+      applicationId: this.appId,
+      debug: true
+    });
+
+    this.status = `RUM SDK initialized for ${this.appId}`;
   }
 
   private async initializeApplication() {
@@ -45,6 +59,7 @@ export class AppComponent implements OnInit {
         this.appId = existingKey;
         this.apiKey = existingKey;
         this.status = `Using existing application: ${existing.name}`;
+        this.initializeRumSdk();
         return;
       }
 
@@ -58,6 +73,7 @@ export class AppComponent implements OnInit {
         throw new Error('Application was created but did not return an apiKey.');
       }
 
+      this.initializeRumSdk();
       this.status = `Created new application: ${created.name}`;
     } catch (error) {
       console.error('RUM SDK Todos initialization failed:', error);
@@ -82,30 +98,16 @@ export class AppComponent implements OnInit {
     this.newTodo = '';
     this.status = `Todo added: ${title}`;
 
-    await this.rumApi.sendTelemetry(this.appId, {
-      type: 'event',
-      eventType: 'todo-add',
-      elementId: 'todo-input',
-      elementTag: 'input',
-      elementPath: 'app-root > form > input',
-      metadata: JSON.stringify({ title }),
-      path: '/todos'
-    });
+    RumSDK.getInstance().logEvent('todo-add', { title });
   }
 
   async toggleComplete(todo: TodoItem) {
     todo.completed = !todo.completed;
     this.status = todo.completed ? `Completed: ${todo.title}` : `Reopened: ${todo.title}`;
 
-    await this.rumApi.sendTelemetry(this.appId, {
-      type: 'event',
-      eventType: todo.completed ? 'todo-complete' : 'todo-reopen',
-      elementId: `todo-${todo.id}`,
-      elementTag: 'li',
-      elementClass: todo.completed ? 'todo-completed' : 'todo-pending',
-      elementPath: `app-root > ul > li:nth-child(${this.todos.indexOf(todo) + 1})`,
-      metadata: JSON.stringify({ title: todo.title, completed: todo.completed }),
-      path: '/todos'
+    RumSDK.getInstance().logEvent(todo.completed ? 'todo-complete' : 'todo-reopen', {
+      title: todo.title,
+      completed: todo.completed
     });
   }
 
@@ -113,26 +115,7 @@ export class AppComponent implements OnInit {
     this.todos = this.todos.filter((item) => item.id !== todo.id);
     this.status = `Removed: ${todo.title}`;
 
-    await this.rumApi.sendTelemetry(this.appId, {
-      type: 'event',
-      eventType: 'todo-delete',
-      elementId: `todo-${todo.id}`,
-      elementTag: 'button',
-      elementPath: 'app-root > ul > li > button',
-      metadata: JSON.stringify({ title: todo.title }),
-      path: '/todos'
-    });
+    RumSDK.getInstance().logEvent('todo-delete', { title: todo.title });
   }
 
-  private async sendPageView() {
-    if (!this.appId) {
-      return;
-    }
-
-    await this.rumApi.sendTelemetry(this.appId, {
-      type: 'pageview',
-      path: '/todos',
-      title: 'RUM SDK Todos'
-    });
-  }
 }
