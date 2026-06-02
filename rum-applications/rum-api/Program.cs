@@ -265,20 +265,28 @@ app.MapGet("/api/dashboards/overview", async (RumDbContext db, Guid appId, int r
     var errorRate = activeSessions > 0 ? (double)totalSessionsWithErrors / activeSessions * 100.0 : 0.0;
 
     // Page views over time (grouped by day)
-    var viewsOverTime = await db.PageViews
+    var viewsOverTimeRaw = await db.PageViews
         .Where(pv => pv.Session!.ApplicationId == appId && pv.CreatedAt >= cutoff)
         .GroupBy(pv => pv.CreatedAt.Date)
-        .Select(g => new { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
+        .Select(g => new { Date = g.Key, Count = g.Count() })
         .OrderBy(x => x.Date)
         .ToListAsync();
 
+    var viewsOverTime = viewsOverTimeRaw
+        .Select(x => new { Date = x.Date.ToString("yyyy-MM-dd"), Count = x.Count })
+        .ToList();
+
     // Error spikes over time
-    var errorsOverTime = await db.ErrorLogs
+    var errorsOverTimeRaw = await db.ErrorLogs
         .Where(el => el.Session!.ApplicationId == appId && el.CreatedAt >= cutoff)
         .GroupBy(el => el.CreatedAt.Date)
-        .Select(g => new { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
+        .Select(g => new { Date = g.Key, Count = g.Count() })
         .OrderBy(x => x.Date)
         .ToListAsync();
+
+    var errorsOverTime = errorsOverTimeRaw
+        .Select(x => new { Date = x.Date.ToString("yyyy-MM-dd"), Count = x.Count })
+        .ToList();
 
     return Results.Ok(new
     {
@@ -512,6 +520,117 @@ app.MapGet("/api/dashboards/sessions/{id}", async (RumDbContext db, Guid id) =>
         Session = session,
         Timeline = sortedTimeline
     });
+});
+
+// -------------------------------------------------------------
+// Development helper: Seed dummy telemetry for the seeded application
+// -------------------------------------------------------------
+app.MapPost("/dev/seed", async (RumDbContext db) =>
+{
+    var appEntity = await db.Applications.FirstOrDefaultAsync(a => a.ApiKey == "test-app-id-123");
+    if (appEntity == null)
+    {
+        return Results.NotFound(new { Message = "Seed application with API key 'test-app-id-123' not found." });
+    }
+
+    var rnd = new Random();
+    var now = DateTime.UtcNow;
+    var seededSessions = 0;
+    var seededEvents = 0;
+
+    for (int s = 0; s < 3; s++)
+    {
+        var session = new Session
+        {
+            ApplicationId = appEntity.Id,
+            SessionGuid = Guid.NewGuid().ToString(),
+            Browser = s % 2 == 0 ? "Chrome" : "Firefox",
+            Os = "Windows",
+            DeviceType = "Desktop",
+            Resolution = "1920x1080",
+            Referrer = "https://example.com",
+            CreatedAt = now.AddDays(-s)
+        };
+
+        db.Sessions.Add(session);
+        await db.SaveChangesAsync(); // ensure Session.Id is available
+        seededSessions++;
+
+        // Add a few page views
+        for (int i = 0; i < 3; i++)
+        {
+            db.PageViews.Add(new PageView
+            {
+                SessionId = session.Id,
+                Path = i == 0 ? "/" : $"/page-{i}",
+                Title = i == 0 ? "Home" : $"Page {i}",
+                DurationMs = 100 + rnd.Next(1000),
+                CreatedAt = session.CreatedAt.AddMinutes(i + 1)
+            });
+            seededEvents++;
+        }
+
+        // Add a web vital
+        db.WebVitals.Add(new WebVital
+        {
+            SessionId = session.Id,
+            MetricName = "LCP",
+            Value = 1200 + rnd.Next(800),
+            Rating = "good",
+            Path = "/",
+            CreatedAt = session.CreatedAt.AddMinutes(2)
+        });
+        seededEvents++;
+
+        // Add a network request
+        db.NetworkRequests.Add(new NetworkRequest
+        {
+            SessionId = session.Id,
+            Url = "/api/data",
+            Method = "GET",
+            StatusCode = 200,
+            DurationMs = 50 + rnd.Next(500),
+            Path = "/",
+            CreatedAt = session.CreatedAt.AddMinutes(3)
+        });
+        seededEvents++;
+
+        // Add an error for one session
+        if (s == 1)
+        {
+            db.ErrorLogs.Add(new ErrorLog
+            {
+                SessionId = session.Id,
+                Message = "TypeError: foo is not a function",
+                StackTrace = "at foo (app.js:42:13)",
+                FileName = "app.js",
+                LineNumber = 42,
+                ColumnNumber = 13,
+                Path = "/",
+                CreatedAt = session.CreatedAt.AddMinutes(4)
+            });
+            seededEvents++;
+        }
+
+        // Add a user event
+        db.UserEvents.Add(new UserEvent
+        {
+            SessionId = session.Id,
+            EventType = "click",
+            ElementId = "btn-cta",
+            ElementTag = "button",
+            ElementClass = "btn primary",
+            ElementPath = "body > div > button",
+            Metadata = "{\"x\":1}",
+            Path = "/",
+            CreatedAt = session.CreatedAt.AddMinutes(5)
+        });
+        seededEvents++;
+
+        await db.SaveChangesAsync();
+    }
+
+    return Results.Ok(new { Success = true, SeededSessions = seededSessions, SeededEvents = seededEvents });
 });
 
 app.Run();
