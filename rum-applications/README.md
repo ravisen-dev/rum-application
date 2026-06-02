@@ -1,43 +1,34 @@
 # Real User Monitoring (RUM) Application
 
-Real User Monitoring (RUM) captures real-user frontend performance and behavioral telemetry and stores it for analysis in a dashboard.
+This workspace contains a full Real User Monitoring solution with backend ingestion, frontend dashboard, SDK client, and a sample Angular application.
 
-**Projects included**
-- **rum-api** — Backend ingestion and analytics API (ASP.NET Core, EF Core, PostgreSQL).
-- **rum-dashboard** — Angular-based dashboard and UI for visualizing telemetry.
-- **rum-sdk** — TypeScript SDK / client library to collect and send telemetry from web apps.
+## Projects included
 
-**Quick overview & run instructions**
+- **rum-api** — Backend ingestion and analytics API (ASP.NET Core Minimal API, EF Core, PostgreSQL).
+- **rum-dashboard** — Angular dashboard for visualizing application telemetry.
+- **rum-sdk** — TypeScript SDK package for collecting and sending telemetry from web apps.
+- **rum-sdk-todos** — Angular sample app that uses the SDK and sends telemetry to the backend.
 
-- **rum-api**: Backend API
-	- Location: [rum-api](rum-api)
-	- Tech: .NET 10, EF Core, Npgsql (PostgreSQL provider). See [rum-api/rum-api.csproj](rum-api/rum-api.csproj#L1-L15) and [rum-api/Program.cs](rum-api/Program.cs#L1-L40).
-	- Notes: The app will auto-create the database and seed a test application when started. Default connection string is in `Program.cs` (uses `Host=localhost;Database=rum_db;Username=postgres;Password=postgres;Port=5432`).
-	- Run locally:
+## Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [Node.js](https://nodejs.org/) and `npm`
+- [PostgreSQL](https://www.postgresql.org/) running locally (default connection uses `Host=localhost;Port=5432;Username=postgres;Password=postgres`)
+
+## Run the solution locally
+
+1. Start the backend API
 
 ```bash
 cd rum-api
 dotnet restore
 dotnet build
-dotnet run
+dotnet run --urls http://localhost:5000
 ```
 
-- **rum-dashboard**: Angular UI
-	- Location: [rum-dashboard](rum-dashboard)
-	- Tech: Angular 21 (see [rum-dashboard/package.json](rum-dashboard/package.json#L1-L30)).
-	- Common scripts: `npm start` (dev server), `npm run build` (production build), `npm test`.
-	- Run locally:
+The backend will auto-create the database and seed a default application if needed.
 
-```bash
-cd rum-dashboard
-npm install
-npm start
-```
-
-- **rum-sdk**: TypeScript SDK
-	- Location: [rum-sdk](rum-sdk)
-	- Tech: TypeScript library (see [rum-sdk/package.json](rum-sdk/package.json#L1-L30)).
-	- Build:
+2. Build the SDK package
 
 ```bash
 cd rum-sdk
@@ -45,10 +36,17 @@ npm install
 npm run build
 ```
 
-- **rum-sdk-todos**: Angular RUM sample application
-	- Location: [rum-sdk-todos](rum-sdk-todos)
-	- Tech: Angular 21, standalone component, local todo app that registers itself with the RUM backend and sends telemetry to the API.
-	- Run locally:
+3. Start the dashboard
+
+```bash
+cd rum-dashboard
+npm install
+npm start
+```
+
+Open the dashboard at `http://localhost:4200`.
+
+4. Start the sample todo app
 
 ```bash
 cd rum-sdk-todos
@@ -56,7 +54,18 @@ npm install
 npm start
 ```
 
-**Developer**
-- Ravi Sen
+Open the sample app at `http://localhost:4201`.
 
-If you'd like, I can also add more detailed setup steps (PostgreSQL example, Docker compose, or CI scripts). 
+## Notes
+
+- The dashboard and sample app are configured to communicate with the backend at `http://localhost:5000`.
+- `rum-sdk-todos` depends on the local SDK package in `rum-sdk` via `file:../rum-sdk`.
+- The backend supports CORS for `http://localhost:4200` and `http://localhost:4201`.
+
+## Project locations
+
+- `rum-api` — backend service and telemetry ingestion endpoints
+- `rum-dashboard` — Angular UI for application and telemetry visualization
+- `rum-sdk` — reusable TypeScript SDK package
+- `rum-sdk-todos` — Angular sample client integration
+ 
