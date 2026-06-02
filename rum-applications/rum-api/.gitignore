@@ -1,0 +1,67 @@
+## --- Build Results ---
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+## --- User-specific files (IDEs and Editors) ---
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## --- Visual Studio 2015-2026 Cache / Options ---
+.vs/
+Generated\ Files/
+
+## --- Visual Studio Code ---
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/code-workspace
+
+## --- JetBrains Rider / IntelliJ ---
+.idea/
+*.sln.iml
+
+## --- .NET Core / Tools ---
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.generated.cs
+
+## --- Hot Reload & Diagnostic Tools ---
+.utmp/
+.ionide/
+BenchmarkDotNet.Artifacts/
+
+## --- Secrets & Local Configurations ---
+# Ignore local secrets, but DO NOT ignore primary appsettings.json
+usersecrets.json
+secrets.json
+*.usersecrets
+appsettings.Development.json
+appsettings.local.json
+
+## --- Testing ---
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+## --- OS Files ---
+.DS_Store
+Thumbs.db

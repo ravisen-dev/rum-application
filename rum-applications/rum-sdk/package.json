@@ -1,0 +1,16 @@
+{
+  "name": "@rum-app/sdk",
+  "version": "1.0.0",
+  "description": "Real User Monitoring (RUM) Javascript/TypeScript SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "author": "Ravi Sen",
+  "license": "ISC"
+}

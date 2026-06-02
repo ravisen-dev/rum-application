@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RUM SDK Test Client</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121214;
+      color: #e1e1e6;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #a855f7;
+      border-bottom: 1px solid #2d2d34;
+      padding-bottom: 10px;
+    }
+    .card {
+      background: #1e1e24;
+      border: 1px solid #2d2d34;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    button {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      transition: opacity 0.2s;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    button.secondary {
+      background: #2d2d34;
+      border: 1px solid #3f3f46;
+    }
+    pre {
+      background: #09090b;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      color: #34d399;
+    }
+    .status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #ef4444;
+      margin-right: 5px;
+    }
+    .status.active {
+      background-color: #10b981;
+    }
+  </style>
+</head>
+<body>
+  <h1>RUM SDK Verification Console</h1>
+  
+  <div class="card">
+    <h3>SDK Status</h3>
+    <div>
+      <span class="status active" id="status-dot"></span>
+      <span id="status-text">Initialized & Listening</span>
+    </div>
+    <p>Using App ID: <code style="color: #60a5fa;">test-app-id-123</code></p>
+  </div>
+
+  <div class="card">
+    <h3>Simulate Core Actions</h3>
+    <p>Use the buttons below to trigger RUM events and check your developer console (F12) to see queued events.</p>
+    
+    <button id="btn-click-test">Trigger User Click Action</button>
+    
+    <button id="btn-fetch-test" class="secondary">Simulate Fetch Request (Success)</button>
+    
+    <button id="btn-fetch-fail" class="secondary" style="border-color: #ef4444;">Simulate Fetch Request (404)</button>
+    
+    <button id="btn-error-test" class="secondary" style="border-color: #f59e0b;">Simulate Script Error</button>
+
+    <button id="btn-promise-test" class="secondary" style="border-color: #f59e0b;">Simulate Promise Rejection</button>
+  </div>
+
+  <div class="card">
+    <h3>SPA Navigation Simulator</h3>
+    <p>Simulate single page application route changes to test history overrides.</p>
+    <button id="btn-route-home">Go to /home</button>
+    <button id="btn-route-products">Go to /products</button>
+    <button id="btn-route-cart">Go to /cart</button>
+  </div>
+
+  <div class="card">
+    <h3>Manual Sync</h3>
+    <button id="btn-flush" style="background: #10b981;">Force Flush Queue Now</button>
+  </div>
+
+  <script src="./dist/index.js"></script>
+  <script>
+    // Initialize RUM SDK
+    const sdk = RumSDK.init({
+      endpoint: 'http://localhost:5182/api/telemetry/ingest',
+      applicationId: 'test-app-id-123',
+      debug: true,
+      batchIntervalMs: 5000,
+      maxQueueSize: 5
+    });
+
+    console.log('RUM SDK Loaded successfully!', sdk);
+
+    // Event hooks
+    document.getElementById('btn-click-test').addEventListener('click', () => {
+      console.log('Manual action triggered!');
+    });
+
+    document.getElementById('btn-fetch-test').addEventListener('click', () => {
+      // Hit a standard API that succeeds
+      fetch('https://jsonplaceholder.typicode.com/todos/1')
+        .then(res => res.json())
+        .then(data => console.log('Fetch success response:', data));
+    });
+
+    document.getElementById('btn-fetch-fail').addEventListener('click', () => {
+      // Hit an endpoint that fails
+      fetch('https://jsonplaceholder.typicode.com/nonexistent-endpoint-123')
+        .then(res => console.log('Fetch failed status:', res.status))
+        .catch(err => console.error('Fetch error:', err));
+    });
+
+    document.getElementById('btn-error-test').addEventListener('click', () => {
+      // Trigger a raw Javascript exception
+      console.log('Triggering unhandled runtime exception...');
+      setTimeout(() => {
+        throw new TypeError("Cannot read property 'undefined' of null (Simulated error)");
+      }, 50);
+    });
+
+    document.getElementById('btn-promise-test').addEventListener('click', () => {
+      // Trigger unhandled promise rejection
+      console.log('Triggering unhandled promise rejection...');
+      new Promise((resolve, reject) => {
+        setTimeout(() => {
+          reject(new Error("Cart checkout transaction failed (Simulated promise failure)"));
+        }, 50);
+      });
+    });
+
+    // Route transitions
+    document.getElementById('btn-route-home').addEventListener('click', () => {
+      history.pushState({ page: 'home' }, 'Home Page', '/home');
+    });
+
+    document.getElementById('btn-route-products').addEventListener('click', () => {
+      history.pushState({ page: 'products' }, 'Products Page', '/products');
+    });
+
+    document.getElementById('btn-route-cart').addEventListener('click', () => {
+      history.pushState({ page: 'cart' }, 'Cart Page', '/cart');
+    });
+
+    // Force flush
+    document.getElementById('btn-flush').addEventListener('click', () => {
+      sdk.flush();
+    });
+  </script>
+</body>
+</html>
