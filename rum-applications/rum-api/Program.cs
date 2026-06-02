@@ -633,10 +633,104 @@ app.MapPost("/dev/seed", async (RumDbContext db) =>
     return Results.Ok(new { Success = true, SeededSessions = seededSessions, SeededEvents = seededEvents });
 });
 
+// Development: create a new monitored application and seed telemetry for it
+app.MapPost("/dev/seed-app", async (RumDbContext db, CreateAppDto dto) =>
+{
+    if (string.IsNullOrWhiteSpace(dto.Name))
+        return Results.BadRequest(new { Message = "Name is required." });
+
+    // create application
+    var apiKey = string.IsNullOrWhiteSpace(dto.ApiKey) ? Guid.NewGuid().ToString("N")[..12] : dto.ApiKey;
+
+    var appEntity = new Application
+    {
+        Id = Guid.NewGuid(),
+        Name = dto.Name,
+        ApiKey = apiKey,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    db.Applications.Add(appEntity);
+    await db.SaveChangesAsync();
+
+    // seed telemetry similar to /dev/seed but tied to this app
+    var rnd = new Random();
+    var now = DateTime.UtcNow;
+    var seededSessions = 0;
+    var seededEvents = 0;
+
+    for (int s = 0; s < (dto.Sessions > 0 ? dto.Sessions : 2); s++)
+    {
+        var session = new Session
+        {
+            ApplicationId = appEntity.Id,
+            SessionGuid = Guid.NewGuid().ToString(),
+            Browser = s % 2 == 0 ? "Chrome" : "Edge",
+            Os = "Linux",
+            DeviceType = "Desktop",
+            Resolution = "1366x768",
+            Referrer = "https://demo.example",
+            CreatedAt = now.AddDays(-s)
+        };
+
+        db.Sessions.Add(session);
+        await db.SaveChangesAsync();
+        seededSessions++;
+
+        for (int i = 0; i < 2; i++)
+        {
+            db.PageViews.Add(new PageView
+            {
+                SessionId = session.Id,
+                Path = i == 0 ? "/" : $"/item/{i}",
+                Title = i == 0 ? "Home" : $"Item {i}",
+                DurationMs = 200 + rnd.Next(800),
+                CreatedAt = session.CreatedAt.AddMinutes(i + 1)
+            });
+            seededEvents++;
+        }
+
+        db.WebVitals.Add(new WebVital
+        {
+            SessionId = session.Id,
+            MetricName = "CLS",
+            Value = Math.Round(0.01 + rnd.NextDouble() * 0.1, 3),
+            Rating = "good",
+            Path = "/",
+            CreatedAt = session.CreatedAt.AddMinutes(2)
+        });
+        seededEvents++;
+
+        db.NetworkRequests.Add(new NetworkRequest
+        {
+            SessionId = session.Id,
+            Url = "/api/items",
+            Method = "GET",
+            StatusCode = 200,
+            DurationMs = 30 + rnd.Next(200),
+            Path = "/",
+            CreatedAt = session.CreatedAt.AddMinutes(3)
+        });
+        seededEvents++;
+
+        await db.SaveChangesAsync();
+    }
+
+    return Results.Ok(new { Success = true, AppId = appEntity.Id, ApiKey = appEntity.ApiKey, SeededSessions = seededSessions, SeededEvents = seededEvents });
+});
+
 app.Run();
 
 // --- Simple DTO for registration ---
 public class ApplicationCreateDto
 {
     public required string Name { get; set; }
+}
+
+// DTO for dev seed-app endpoint
+public class CreateAppDto
+{
+    public required string Name { get; set; }
+    public string? ApiKey { get; set; }
+    public int Sessions { get; set; } = 2;
 }
