@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
@@ -144,10 +145,15 @@ app.MapPost("/api/telemetry/ingest", async (RumDbContext db, TelemetryBatchDto b
     // 3. Process Batch Events
     foreach (var ev in batch.Events)
     {
-        // Parse timestamp
-        if (!DateTime.TryParse(ev.Timestamp, out var timestamp))
+        // Parse timestamp into UTC; fallback to UTC now for invalid timestamps
+        DateTime timestamp;
+        if (!DateTimeOffset.TryParse(ev.Timestamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var timestampOffset))
         {
             timestamp = DateTime.UtcNow;
+        }
+        else
+        {
+            timestamp = timestampOffset.UtcDateTime;
         }
 
         switch (ev.Type.ToLower())

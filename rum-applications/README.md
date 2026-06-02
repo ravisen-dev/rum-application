@@ -45,6 +45,17 @@ npm install
 npm run build
 ```
 
+- **rum-sdk-todos**: Angular RUM sample application
+	- Location: [rum-sdk-todos](rum-sdk-todos)
+	- Tech: Angular 21, standalone component, local todo app that registers itself with the RUM backend and sends telemetry to the API.
+	- Run locally:
+
+```bash
+cd rum-sdk-todos
+npm install
+npm start
+```
+
 **Developer**
 - Ravi Sen
 

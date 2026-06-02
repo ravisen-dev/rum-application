@@ -1,0 +1,35 @@
+<div class="app-shell">
+  <header>
+    <h1>{{ title }}</h1>
+    <p class="status">{{ status }}</p>
+  </header>
+
+  <section class="todo-panel">
+    <form (submit)="$event.preventDefault(); addTodo()" class="todo-form">
+      <input
+        id="todo-input"
+        type="text"
+        [(ngModel)]="newTodo"
+        name="newTodo"
+        placeholder="Add a new todo"
+        autocomplete="off"
+      />
+      <button type="submit" [disabled]="!newTodo.trim()">Add</button>
+    </form>
+
+    <div class="app-info">
+      <strong>Registered app key:</strong>
+      <code>{{ appId || 'pending...' }}</code>
+    </div>
+
+    <ul class="todo-list">
+      <li *ngFor="let todo of todos" [class.completed]="todo.completed">
+        <label>
+          <input type="checkbox" [checked]="todo.completed" (change)="toggleComplete(todo)" />
+          <span>{{ todo.title }}</span>
+        </label>
+        <button type="button" (click)="removeTodo(todo)">Remove</button>
+      </li>
+    </ul>
+  </section>
+</div>
